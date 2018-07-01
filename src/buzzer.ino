@@ -117,5 +117,56 @@ void doBuzzerStuff(){
       if(digitalRead(buzzer) == LOW)
         digitalWrite(buzzer, HIGH);
       break;
+
+    case 5: // Disarmed
+      switch(beepStep){
+        case 1:
+          if(timerMillis == 0)
+            timerMillis = millis();
+          digitalWrite(buzzer, HIGH);
+          if(millis() - timerMillis >= 600){
+            beepStep = 2;
+            timerMillis = millis();
+          }
+          break;
+        
+        case 2:
+          digitalWrite(buzzer, LOW);
+          if(millis() - timerMillis >= 600){
+            beepStep = 3;
+            timerMillis = millis();
+          }
+          break;
+          
+        case 3:
+          digitalWrite(buzzer, HIGH);
+          if(millis() - timerMillis >= 600){
+            beepStep = 4;
+            timerMillis = millis();
+          }
+          break;
+
+        case 4:
+          digitalWrite(buzzer, LOW);
+          if(millis() - timerMillis >= 600){
+            beepStep = 5;
+            timerMillis = millis();
+          }
+          break;
+
+        case 5:
+          digitalWrite(buzzer, HIGH);
+          if(millis() - timerMillis >= 600){
+            beepStep = 6;
+            timerMillis = millis();
+          }
+          break;
+
+        case 6:
+          digitalWrite(buzzer, LOW);
+          buzzerStatus = 0;
+          break;
+      }
+      break;
   }
 }

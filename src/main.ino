@@ -89,6 +89,7 @@ void loop() {
         buttonIsPressed = false;
         bombIsArmed = false;
         drawScreen(13); // Bomb disarmed
+        buzzerStatus = 5;
       }
     } else {
       float timeLeft = armTime - ((millis() - pressedSince) / 1000);
@@ -98,6 +99,7 @@ void loop() {
         buttonIsPressed = false;
         bombIsArmed = true;
         drawScreen(8); // Bomb armed
+        buzzerStatus = 2;
       }
     }
   }
@@ -130,6 +132,7 @@ void keypadEvent(KeypadEvent key){
             if(key == '#'){
               pressedSince = millis();
               buttonIsPressed = true;
+              buzzerStatus = 1;
 
               if(bombIsArmed){
                 lcd.clear();
@@ -161,8 +164,10 @@ void keypadEvent(KeypadEvent key){
               // Not enough time
               if(bombIsArmed){
                 drawScreen(11);
+                buzzerStatus = 2;
               } else {
                 drawScreen(7);
+                buzzerStatus = 0;
               }
             }
           }
@@ -196,26 +201,22 @@ void captureGameMode(char key){
       modeName = "1. Button only   ";
       gameMode = 1;
       beep(100);
-      buzzerStatus = 1;
       break;
     case '2':
       modeName = "2. Code + button";
       gameMode = 2;
       beep(100);
-      buzzerStatus = 2;
       break;
     case '3':
       modeName = "3. Code only    ";
       gameMode = 3;
       beep(100);
-      buzzerStatus = 3;
       break;
   
     default:
       modeName = "                ";
       gameMode = 0;
       beepError();
-      buzzerStatus = 4;
       break;
   }
 
@@ -434,7 +435,9 @@ void nextSetupStep(){
         disarmTries--;
 
         if(disarmTries <= 0){
+          // Bomb explodes
           drawScreen(12);
+          buzzerStatus = 4;
         } else {
           drawScreen(14);
         }

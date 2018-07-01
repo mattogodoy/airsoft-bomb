@@ -1,8 +1,8 @@
-#AIRSOFT BOMB
+# AIRSOFT BOMB
 
 This is an Arduino based fake bomb for Airsoft matches.
 
-#WIRING
+## WIRING
 
 Arduino Pin         Module - Pin
 -----------         ------------
@@ -37,15 +37,3 @@ A4 (D18)
 A5 (D19)
 A6
 A7
-
-
-
-MENU
-====
-
-MAIN MENU - Controlled by numbers. # for Select.
-
->> Select mode:
->> 1. Simple bomb (CS)
-
-

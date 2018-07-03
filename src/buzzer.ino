@@ -5,6 +5,21 @@ void beep(int timeMs){
   digitalWrite(buzzer, LOW);
 }
 
+void beepArmDisarm(){
+  leds[0] = CRGB::Yellow;
+  leds[1] = CRGB::Yellow;
+  FastLED.show();
+
+  for(int i = 0; i <= 40; i++){
+    beep(20);
+    delay(20);
+  }
+
+  leds[0] = CRGB::Black;
+  leds[1] = CRGB::Black;
+  FastLED.show();
+}
+
 // This function executes non-blocking beep patterns
 void doBuzzerStuff(){
   // === BUZZER STATUS ===
@@ -27,8 +42,13 @@ void doBuzzerStuff(){
 
   switch (buzzerStatus){
     case 0: // Off
-      if(digitalRead(buzzer) == HIGH)
+      leds[0] = CRGB::Green;
+      leds[1] = CRGB::Green;
+      FastLED.show();
+
+      if(digitalRead(buzzer) == HIGH){
         digitalWrite(buzzer, LOW);
+      }
       break;
 
     case 1: // Arming/Disarming
@@ -37,6 +57,11 @@ void doBuzzerStuff(){
           if(timerMillis == 0)
             timerMillis = millis();
           digitalWrite(buzzer, HIGH);
+
+          leds[0] = CRGB::Yellow;
+          leds[1] = CRGB::Yellow;
+          FastLED.show();
+
           if(millis() - timerMillis >= 100){
             beepStep = 2;
             timerMillis = millis();
@@ -45,6 +70,11 @@ void doBuzzerStuff(){
         
         case 2:
           digitalWrite(buzzer, LOW);
+
+          leds[0] = CRGB::Black;
+          leds[1] = CRGB::Black;
+          FastLED.show();
+
           if(millis() - timerMillis >= 900){
             beepStep = 1;
             timerMillis = 0;
@@ -59,6 +89,11 @@ void doBuzzerStuff(){
           if(timerMillis == 0)
             timerMillis = millis();
           digitalWrite(buzzer, HIGH);
+
+          leds[0] = CRGB::Red;
+          leds[1] = CRGB::Black;
+          FastLED.show();
+
           if(millis() - timerMillis >= 100){
             beepStep = 2;
             timerMillis = millis();
@@ -75,6 +110,9 @@ void doBuzzerStuff(){
           
         case 3:
           digitalWrite(buzzer, HIGH);
+          leds[0] = CRGB::Black;
+          leds[1] = CRGB::Red;
+          FastLED.show();
           if(millis() - timerMillis >= 100){
             beepStep = 4;
             timerMillis = millis();
@@ -96,8 +134,13 @@ void doBuzzerStuff(){
         case 1:
           if(timerMillis == 0)
             timerMillis = millis();
+
+          leds[0] = CRGB::Red;
+          leds[1] = CRGB::Black;
+          FastLED.show();
+
           digitalWrite(buzzer, HIGH);
-          if(millis() - timerMillis >= 50){
+          if(millis() - timerMillis >= 250){
             beepStep = 2;
             timerMillis = millis();
           }
@@ -105,7 +148,12 @@ void doBuzzerStuff(){
         
         case 2:
           digitalWrite(buzzer, LOW);
-          if(millis() - timerMillis >= 50){
+
+          leds[0] = CRGB::Black;
+          leds[1] = CRGB::Red;
+          FastLED.show();
+
+          if(millis() - timerMillis >= 250){
             beepStep = 1;
             timerMillis = 0;
           }
@@ -114,8 +162,34 @@ void doBuzzerStuff(){
       break;
 
     case 4: // Exploded
-      if(digitalRead(buzzer) == LOW)
-        digitalWrite(buzzer, HIGH);
+      switch(beepStep){
+        case 1:
+          if(timerMillis == 0)
+            timerMillis = millis();
+
+          leds[0] = CRGB::Red;
+          leds[1] = CRGB::Yellow;
+          FastLED.show();
+
+          digitalWrite(buzzer, HIGH);
+
+          if(millis() - timerMillis >= 150){
+            beepStep = 2;
+            timerMillis = millis();
+          }
+          break;
+        
+        case 2:
+          leds[0] = CRGB::Yellow;
+          leds[1] = CRGB::Red;
+          FastLED.show();
+
+          if(millis() - timerMillis >= 150){
+            beepStep = 1;
+            timerMillis = 0;
+          }
+          break;
+      }
       break;
 
     case 5: // Disarmed
@@ -123,7 +197,13 @@ void doBuzzerStuff(){
         case 1:
           if(timerMillis == 0)
             timerMillis = millis();
+          
           digitalWrite(buzzer, HIGH);
+
+          leds[0] = CRGB::Green;
+          leds[1] = CRGB::Green;
+          FastLED.show();
+
           if(millis() - timerMillis >= 600){
             beepStep = 2;
             timerMillis = millis();
@@ -132,6 +212,11 @@ void doBuzzerStuff(){
         
         case 2:
           digitalWrite(buzzer, LOW);
+
+          leds[0] = CRGB::Black;
+          leds[1] = CRGB::Black;
+          FastLED.show();
+
           if(millis() - timerMillis >= 600){
             beepStep = 3;
             timerMillis = millis();
@@ -140,6 +225,11 @@ void doBuzzerStuff(){
           
         case 3:
           digitalWrite(buzzer, HIGH);
+
+          leds[0] = CRGB::Green;
+          leds[1] = CRGB::Green;
+          FastLED.show();
+
           if(millis() - timerMillis >= 600){
             beepStep = 4;
             timerMillis = millis();
@@ -148,6 +238,11 @@ void doBuzzerStuff(){
 
         case 4:
           digitalWrite(buzzer, LOW);
+
+          leds[0] = CRGB::Black;
+          leds[1] = CRGB::Black;
+          FastLED.show();
+
           if(millis() - timerMillis >= 600){
             beepStep = 5;
             timerMillis = millis();
@@ -156,6 +251,11 @@ void doBuzzerStuff(){
 
         case 5:
           digitalWrite(buzzer, HIGH);
+
+          leds[0] = CRGB::Green;
+          leds[1] = CRGB::Green;
+          FastLED.show();
+
           if(millis() - timerMillis >= 600){
             beepStep = 6;
             timerMillis = millis();

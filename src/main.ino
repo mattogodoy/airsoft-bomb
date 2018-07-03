@@ -1,6 +1,6 @@
-
 #include <LiquidCrystal.h>
 #include <Keypad.h>
+#include "FastLED.h"
 
 // Initialize LCD display
 LiquidCrystal lcd(7, 8, 9, 10, 11, 12);
@@ -18,6 +18,14 @@ byte rowPins[ROWS] = {3, 15, 14, 5}; //connect to the row pinouts of the keypad
 byte colPins[COLS] = {4, 2, 6}; //connect to the column pinouts of the keypad
 
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
+
+// Initialize LEDs
+#define DATA_PIN    17 // A3
+#define LED_TYPE    WS2813
+#define COLOR_ORDER GRB
+#define NUM_LEDS    2
+#define BRIGHTNESS  255
+CRGB leds[NUM_LEDS];
 
 // Cursor position
 int cursorLine = 0;
@@ -53,6 +61,8 @@ String disarmCode = "";
 int currentScreen = 1;
 int gameMode = 0;
 int bombStatus = 0; // 0: neutral, 1: armed, 2: defused, 3: exploded
+int bombTimeLeft = 0;
+double bombEnabledSince = 0;
 
 String capturedValue = "";
 
@@ -60,9 +70,21 @@ bool bombIsArmed = false;
 bool buttonIsPressed = false;
 double pressedSince = 0;
 
+double previousMillis = 0;
+
+// t is time in seconds = millis()/1000;
+char * timeToString(unsigned long t){
+  static char str[12];
+  long h = t / 3600;
+  t = t % 3600;
+  int m = t / 60;
+  int s = t % 60;
+  sprintf(str, "%02ld:%02d:%02d", h, m, s);
+  return str;
+}
 
 void setup() {
-  Serial.begin(9600);
+  // Serial.begin(9600);
 
   pinMode(buzzer, OUTPUT);
 
@@ -70,6 +92,12 @@ void setup() {
   keypad.setHoldTime(2000); // Default is 1000ms
   
   lcd.begin(16, 2); // set up the LCD's number of columns and rows
+
+  FastLED.addLeds<LED_TYPE,DATA_PIN,COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+  FastLED.setBrightness(BRIGHTNESS);
+  leds[0] = CRGB::Green;
+  leds[1] = CRGB::Green;
+  FastLED.show();
   
   drawScreen(1);
 }
@@ -78,11 +106,33 @@ void loop() {
   keypad.getKey(); // Poll keypad
   doBuzzerStuff();
 
-  if(buttonIsPressed){
-    lcd.setCursor(0, 1);
+  if(bombIsArmed){
+    bombTimeLeft = explodeTime - ((millis() - bombEnabledSince) / 1000);
 
+    if(bombTimeLeft <= 20){
+      buzzerStatus = 3; // About to explode
+    }
+    
+    if(bombTimeLeft <= 0){
+      buzzerStatus = 4; // Bomb exploded
+      if(currentScreen != 12)
+        drawScreen(12);
+    }
+
+    if(currentScreen == 9 || currentScreen == 11){
+      if(millis() - previousMillis >= 1000){
+        lcd.setCursor(0, 0);
+        lcd.print(timeToString(bombTimeLeft));
+        lcd.setCursor(6 + capturedValue.length(), 1);
+        previousMillis = millis();
+      }
+    }
+  }
+
+  if(buttonIsPressed){
     if(bombIsArmed){
       float timeLeft = disarmTime - ((millis() - pressedSince) / 1000);
+      lcd.setCursor(12, 1);
       lcd.print(timeLeft);
       
       if(timeLeft <= 0){
@@ -93,11 +143,13 @@ void loop() {
       }
     } else {
       float timeLeft = armTime - ((millis() - pressedSince) / 1000);
+      lcd.setCursor(12, 0);
       lcd.print(timeLeft);
       
       if(timeLeft <= 0){
         buttonIsPressed = false;
         bombIsArmed = true;
+        bombEnabledSince = millis();
         drawScreen(8); // Bomb armed
         buzzerStatus = 2;
       }
@@ -108,10 +160,10 @@ void loop() {
 void keypadEvent(KeypadEvent key){
     switch (keypad.getState()){
       case PRESSED:
-        Serial.print("Pressed: ");
-        Serial.println(key);
-        Serial.print("Current screen: ");
-        Serial.println(currentScreen);
+        // Serial.print("Pressed: ");
+        // Serial.println(key);
+        // Serial.print("Current screen: ");
+        // Serial.println(currentScreen);
         
         switch (currentScreen){
           case 1: // Main Menu
@@ -136,13 +188,14 @@ void keypadEvent(KeypadEvent key){
 
               if(bombIsArmed){
                 lcd.clear();
-                lcd.print("DEFUSING BOMB");
                 lcd.setCursor(0, 1);
+                lcd.print("DEFUSING:");
               } else {
                 lcd.clear();
-                lcd.print("ARMING BOMB");
-                lcd.setCursor(0, 1);
+                lcd.print("ARMING:");
               }
+
+              previousMillis = 0; // Update clock
             }
             break;
         
@@ -157,9 +210,10 @@ void keypadEvent(KeypadEvent key){
             if(key == '#'){
               buttonIsPressed = false;
               pressedSince = 0;
-              Serial.print("Button was pressed for: ");
-              Serial.print((millis() - pressedSince) / 1000);
-              Serial.println(" seconds");
+              previousMillis = 0; // Update clock
+              // Serial.print("Button was pressed for: ");
+              // Serial.print((millis() - pressedSince) / 1000);
+              // Serial.println(" seconds");
 
               // Not enough time
               if(bombIsArmed){
@@ -234,13 +288,6 @@ void beepError(){
   beep(30);
 }
 
-void beepArmDisarm(){
-  for(int i = 0; i <= 40; i++){
-    beep(20);
-    delay(20);
-  }
-}
-
 void drawScreen(int screenNumber){
   lcd.clear();
   currentScreen = screenNumber;
@@ -291,7 +338,7 @@ void drawScreen(int screenNumber){
       lcd.noBlink();
       lcd.print("== BOMB READY ==");
       lcd.setCursor(0, 1);
-      lcd.print("Hold btn. to arm");
+      lcd.print("Hold # to arm");
       break;
 
     case 8:
@@ -305,8 +352,9 @@ void drawScreen(int screenNumber){
 
     case 9:
       // Bomb armed, enter code
-      lcd.print("Enter code:");
+      // lcd.noBlink();
       lcd.setCursor(0, 1);
+      lcd.print("Code: ");
       lcd.blink();
       break;
 
@@ -321,8 +369,8 @@ void drawScreen(int screenNumber){
     case 11:
       // Hold to defuse
       lcd.noBlink();
-      lcd.print("Hold # to defuse");
       lcd.setCursor(0, 1);
+      lcd.print("Hold # to defuse");
       break;
 
     case 12:
@@ -379,7 +427,7 @@ void captureValue(char key){
       capturedValue += key;
       lcd.print(key);
       
-      Serial.println(capturedValue);
+      // Serial.println(capturedValue);
       break;
   }
 }
@@ -389,40 +437,40 @@ void nextSetupStep(){
     case 2:
       armTime = capturedValue.toInt();
       capturedValue = "";
-      Serial.print("Arm time set: ");
-      Serial.println(armTime);
+      // Serial.print("Arm time set: ");
+      // Serial.println(armTime);
       drawScreen(3);
       break;
 
     case 3:
       disarmTime = capturedValue.toInt();
       capturedValue = "";
-      Serial.print("Disarm time set: ");
-      Serial.println(disarmTime);
+      // Serial.print("Disarm time set: ");
+      // Serial.println(disarmTime);
       drawScreen(4);
       break;
 
     case 4:
       explodeTime = capturedValue.toInt();
       capturedValue = "";
-      Serial.print("Explode time set: ");
-      Serial.println(explodeTime);
+      // Serial.print("Explode time set: ");
+      // Serial.println(explodeTime);
       drawScreen(5);
       break;
 
     case 5:
       disarmCode = capturedValue;
       capturedValue = "";
-      Serial.print("Code set: ");
-      Serial.println(disarmCode);
+      // Serial.print("Code set: ");
+      // Serial.println(disarmCode);
       drawScreen(6);
       break;
 
     case 6:
       disarmTries = capturedValue.toInt();
       capturedValue = "";
-      Serial.print("Disarm tries set: ");
-      Serial.println(disarmTries);
+      // Serial.print("Disarm tries set: ");
+      // Serial.println(disarmTries);
       drawScreen(7);
       break;
 
@@ -454,9 +502,13 @@ void nextSetupStep(){
 
 void clearCode(){
   capturedValue = "";
-  lcd.setCursor(0, 1);
-  lcd.print("                ");
-  lcd.setCursor(0, 1);
+  if(currentScreen == 9){
+    lcd.setCursor(6, 1);
+    lcd.print("          ");
+  } else {
+    lcd.setCursor(0, 1);
+    lcd.print("                ");
+  }
 }
 
 void softReset(){

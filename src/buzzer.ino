@@ -6,8 +6,8 @@ void beep(int timeMs){
 }
 
 void beepArmDisarm(){
-  leds[0] = CRGB::Yellow;
-  leds[1] = CRGB::Yellow;
+  leds[0] = CRGB::Orange;
+  leds[1] = CRGB::Orange;
   FastLED.show();
 
   for(int i = 0; i <= 40; i++){
@@ -42,8 +42,8 @@ void doBuzzerStuff(){
 
   switch (buzzerStatus){
     case 0: // Off
-      leds[0] = CRGB::Green;
-      leds[1] = CRGB::Green;
+      leds[0] = CRGB::Orange;
+      leds[1] = CRGB::Orange;
       FastLED.show();
 
       if(digitalRead(buzzer) == HIGH){
@@ -58,8 +58,8 @@ void doBuzzerStuff(){
             timerMillis = millis();
           digitalWrite(buzzer, HIGH);
 
-          leds[0] = CRGB::Yellow;
-          leds[1] = CRGB::Yellow;
+          leds[0] = CRGB::Orange;
+          leds[1] = CRGB::Orange;
           FastLED.show();
 
           if(millis() - timerMillis >= 100){
@@ -168,7 +168,7 @@ void doBuzzerStuff(){
             timerMillis = millis();
 
           leds[0] = CRGB::Red;
-          leds[1] = CRGB::Yellow;
+          leds[1] = CRGB::Orange;
           FastLED.show();
 
           digitalWrite(buzzer, HIGH);
@@ -180,7 +180,7 @@ void doBuzzerStuff(){
           break;
         
         case 2:
-          leds[0] = CRGB::Yellow;
+          leds[0] = CRGB::Orange;
           leds[1] = CRGB::Red;
           FastLED.show();
 
@@ -264,7 +264,6 @@ void doBuzzerStuff(){
 
         case 6:
           digitalWrite(buzzer, LOW);
-          buzzerStatus = 0;
           break;
       }
       break;

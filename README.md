@@ -9,12 +9,14 @@ Arduino Pin         Module - Pin
 
 5V                  LCD - 2
 5V                  LCD - 15
+5V                  LEDs
 
 GND                 LCD - 1
 GND                 LCD - 3
 GND                 LCD - 5
 GND                 LCD - 16
 GND                 Buzzer - Negative
+GND                 LEDs
 
 D2                  Keypad - 1
 D3                  Keypad - 2
@@ -32,7 +34,7 @@ D13
 A0 (D14)            Keypad - 6
 A1 (D15)            Keypad - 7
 A2 (D16)            Buzzer - Positive
-A3 (D17)
+A3 (D17)            LEDs
 A4 (D18)
 A5 (D19)
 A6

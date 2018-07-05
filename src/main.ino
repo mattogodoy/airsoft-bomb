@@ -32,7 +32,7 @@ int cursorLine = 0;
 int cursorPos = 0;
 
 // Buzzer
-const int buzzer = 16;
+const int buzzer = 16; // D16 (A2)
 int buzzerStatus = 0;
 
 // Configuration
@@ -60,7 +60,6 @@ String disarmCode = "";
 
 int currentScreen = 1;
 int gameMode = 0;
-int bombStatus = 0; // 0: neutral, 1: armed, 2: defused, 3: exploded
 int bombTimeLeft = 0;
 double bombEnabledSince = 0;
 
@@ -109,11 +108,11 @@ void loop() {
   if(bombIsArmed){
     bombTimeLeft = explodeTime - ((millis() - bombEnabledSince) / 1000);
 
-    if(bombTimeLeft <= 20){
+    if(bombTimeLeft < 20){
       buzzerStatus = 3; // About to explode
     }
     
-    if(bombTimeLeft <= 0){
+    if(bombTimeLeft < 0){
       buzzerStatus = 4; // Bomb exploded
       if(currentScreen != 12)
         drawScreen(12);
@@ -135,18 +134,18 @@ void loop() {
       lcd.setCursor(12, 1);
       lcd.print(timeLeft);
       
-      if(timeLeft <= 0){
+      if(timeLeft < 0){
         buttonIsPressed = false;
         bombIsArmed = false;
-        drawScreen(13); // Bomb disarmed
         buzzerStatus = 5;
+        drawScreen(13); // Bomb disarmed
       }
     } else {
       float timeLeft = armTime - ((millis() - pressedSince) / 1000);
       lcd.setCursor(12, 0);
       lcd.print(timeLeft);
       
-      if(timeLeft <= 0){
+      if(timeLeft < 0){
         buttonIsPressed = false;
         bombIsArmed = true;
         bombEnabledSince = millis();
@@ -246,7 +245,11 @@ void captureGameMode(char key){
     case '#':
       if(gameMode != 0){
         beep(100);
-        drawScreen(2);
+        if(gameMode == 3){ // Code only
+          drawScreen(4);
+        } else {
+          drawScreen(2);
+        }
       } else {
         beepError();
       }
@@ -338,7 +341,11 @@ void drawScreen(int screenNumber){
       lcd.noBlink();
       lcd.print("== BOMB READY ==");
       lcd.setCursor(0, 1);
-      lcd.print("Hold # to arm");
+      if(gameMode == 3){ // Code only
+        lcd.print("Press # to arm");
+      } else {
+        lcd.print("Hold # to arm");
+      }
       break;
 
     case 8:
@@ -347,12 +354,15 @@ void drawScreen(int screenNumber){
       lcd.setCursor(0, 1);
       lcd.print("Go get cover");
       beepArmDisarm();
-      drawScreen(9);
+      if(gameMode == 1){ // Button only
+        drawScreen(11);
+      } else {
+        drawScreen(9);
+      }
       break;
 
     case 9:
       // Bomb armed, enter code
-      // lcd.noBlink();
       lcd.setCursor(0, 1);
       lcd.print("Code: ");
       lcd.blink();
@@ -363,7 +373,14 @@ void drawScreen(int screenNumber){
       lcd.noBlink();
       lcd.print("CODE OK");
       beep(800);
-      drawScreen(11);
+      if(gameMode == 3){ // Code only
+        buttonIsPressed = false;
+        bombIsArmed = false;
+        buzzerStatus = 5;
+        drawScreen(13); // Bomb disarmed
+      } else {
+        drawScreen(11);
+      }
       break;
 
     case 11:
@@ -455,7 +472,12 @@ void nextSetupStep(){
       capturedValue = "";
       // Serial.print("Explode time set: ");
       // Serial.println(explodeTime);
-      drawScreen(5);
+      
+      if(gameMode == 1){ // Button only
+        drawScreen(7);
+      } else {
+        drawScreen(5);
+      }
       break;
 
     case 5:
@@ -505,9 +527,11 @@ void clearCode(){
   if(currentScreen == 9){
     lcd.setCursor(6, 1);
     lcd.print("          ");
+    lcd.setCursor(6, 1);
   } else {
     lcd.setCursor(0, 1);
     lcd.print("                ");
+    lcd.setCursor(0, 1);
   }
 }
 

@@ -98,7 +98,7 @@ void setup() {
   leds[1] = CRGB::Green;
   FastLED.show();
   
-  drawScreen(1);
+  drawScreen(0);
 }
 
 void loop() {
@@ -295,7 +295,14 @@ void drawScreen(int screenNumber){
   lcd.clear();
   currentScreen = screenNumber;
 
-  switch (screenNumber){    
+  switch (screenNumber){
+    case 0:
+      // Draw Boot Screen
+      lcd.print("  Airsoft Bomb  ");
+      lcd.setCursor(0, 1);
+      lcd.print("    matto.io    ");
+      delay(1500);
+      drawScreen(1);
     case 1:
       // Draw main menu
       lcd.print("Select mode 1-3:");

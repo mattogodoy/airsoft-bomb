@@ -4,6 +4,7 @@ This is an Arduino based fake bomb for Airsoft matches.
 
 ## WIRING
 
+´´´
 Arduino Pin         Module - Pin
 -----------         ------------
 
@@ -39,3 +40,4 @@ A4 (D18)
 A5 (D19)
 A6
 A7
+´´´

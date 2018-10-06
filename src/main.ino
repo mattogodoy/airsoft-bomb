@@ -35,6 +35,9 @@ int cursorPos = 0;
 const int buzzer = 16; // D16 (A2)
 int buzzerStatus = 0;
 
+// Red button
+int buttonPin = 18; // D18 (A4)
+
 // Configuration
 int armTime = 0; // Seconds
 int disarmTime = 0; // Seconds
@@ -83,9 +86,9 @@ char * timeToString(unsigned long t){
 }
 
 void setup() {
-  // Serial.begin(9600);
-
   pinMode(buzzer, OUTPUT);
+  // Configure button pin as an input and enable the internal pull-up resistor
+  pinMode(buttonPin, INPUT_PULLUP);
 
   keypad.addEventListener(keypadEvent);
   keypad.setHoldTime(2000); // Default is 1000ms
@@ -103,6 +106,8 @@ void setup() {
 
 void loop() {
   keypad.getKey(); // Poll keypad
+  checkButton(); // Poll red button
+
   doBuzzerStuff();
 
   if(bombIsArmed){
@@ -156,14 +161,75 @@ void loop() {
   }
 }
 
+void checkButton(){
+  switch (currentScreen){
+    case 7:
+    case 11:
+      // Check if button is pressed
+      // Since we're using the internal pullup resistor,
+      // a low read actually means the button is pressed
+      if(!digitalRead(buttonPin)){
+        if(!buttonIsPressed){
+          pressedSince = millis();
+          buttonIsPressed = true;
+          buzzerStatus = 1;
+
+          if(bombIsArmed){
+            lcd.clear();
+            lcd.setCursor(0, 1);
+            lcd.print("DEFUSING:");
+          } else {
+            lcd.clear();
+            lcd.print("ARMING:");
+          }
+
+          previousMillis = 0; // Update clock
+        }
+      } else {
+        if(buttonIsPressed){
+          buttonIsPressed = false;
+          pressedSince = 0;
+          previousMillis = 0; // Update clock
+
+          // Not enough time
+          if(bombIsArmed){
+            drawScreen(11);
+            buzzerStatus = 2;
+          } else {
+            drawScreen(7);
+            buzzerStatus = 0;
+          }
+        }
+      }
+      break;
+
+    case 9:
+      if(!digitalRead(buttonPin)){
+        if(disarmCode == capturedValue){
+          // Code OK
+          drawScreen(10);
+        } else {
+          // Wrong code
+          disarmTries--;
+
+          if(disarmTries <= 0){
+            // Bomb explodes
+            drawScreen(12);
+            buzzerStatus = 4;
+          } else {
+            drawScreen(14);
+          }
+        }
+
+        capturedValue = "";
+      }
+      break;
+  }
+}
+
 void keypadEvent(KeypadEvent key){
     switch (keypad.getState()){
       case PRESSED:
-        // Serial.print("Pressed: ");
-        // Serial.println(key);
-        // Serial.print("Current screen: ");
-        // Serial.println(currentScreen);
-        
         switch (currentScreen){
           case 1: // Main Menu
             captureGameMode(key);
@@ -177,53 +243,9 @@ void keypadEvent(KeypadEvent key){
           case 9: // Read code
             captureValue(key);
             break;
-
-          case 7:
-          case 11:
-            if(key == '#'){
-              pressedSince = millis();
-              buttonIsPressed = true;
-              buzzerStatus = 1;
-
-              if(bombIsArmed){
-                lcd.clear();
-                lcd.setCursor(0, 1);
-                lcd.print("DEFUSING:");
-              } else {
-                lcd.clear();
-                lcd.print("ARMING:");
-              }
-
-              previousMillis = 0; // Update clock
-            }
-            break;
         
           default:
             break;
-        }
-        break;
-
-      case RELEASED:
-        if(buttonIsPressed){
-          if(currentScreen == 7 || currentScreen == 11){
-            if(key == '#'){
-              buttonIsPressed = false;
-              pressedSince = 0;
-              previousMillis = 0; // Update clock
-              // Serial.print("Button was pressed for: ");
-              // Serial.print((millis() - pressedSince) / 1000);
-              // Serial.println(" seconds");
-
-              // Not enough time
-              if(bombIsArmed){
-                drawScreen(11);
-                buzzerStatus = 2;
-              } else {
-                drawScreen(7);
-                buzzerStatus = 0;
-              }
-            }
-          }
         }
         break;
 
@@ -349,9 +371,9 @@ void drawScreen(int screenNumber){
       lcd.print("== BOMB READY ==");
       lcd.setCursor(0, 1);
       if(gameMode == 3){ // Code only
-        lcd.print("Press # to arm");
+        lcd.print("Press btn to arm");
       } else {
-        lcd.print("Hold # to arm");
+        lcd.print("Hold btn to arm");
       }
       break;
 
@@ -394,7 +416,7 @@ void drawScreen(int screenNumber){
       // Hold to defuse
       lcd.noBlink();
       lcd.setCursor(0, 1);
-      lcd.print("Hold # to defuse");
+      lcd.print("Hold btn to def.");
       break;
 
     case 12:
@@ -451,7 +473,6 @@ void captureValue(char key){
       capturedValue += key;
       lcd.print(key);
       
-      // Serial.println(capturedValue);
       break;
   }
 }
@@ -461,24 +482,18 @@ void nextSetupStep(){
     case 2:
       armTime = capturedValue.toInt();
       capturedValue = "";
-      // Serial.print("Arm time set: ");
-      // Serial.println(armTime);
       drawScreen(3);
       break;
 
     case 3:
       disarmTime = capturedValue.toInt();
       capturedValue = "";
-      // Serial.print("Disarm time set: ");
-      // Serial.println(disarmTime);
       drawScreen(4);
       break;
 
     case 4:
       explodeTime = capturedValue.toInt();
       capturedValue = "";
-      // Serial.print("Explode time set: ");
-      // Serial.println(explodeTime);
       
       if(gameMode == 1){ // Button only
         drawScreen(7);
@@ -490,16 +505,12 @@ void nextSetupStep(){
     case 5:
       disarmCode = capturedValue;
       capturedValue = "";
-      // Serial.print("Code set: ");
-      // Serial.println(disarmCode);
       drawScreen(6);
       break;
 
     case 6:
       disarmTries = capturedValue.toInt();
       capturedValue = "";
-      // Serial.print("Disarm tries set: ");
-      // Serial.println(disarmTries);
       drawScreen(7);
       break;
 
